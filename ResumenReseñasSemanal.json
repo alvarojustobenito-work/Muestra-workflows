@@ -1,0 +1,35 @@
+{
+  "name": "ResumenReseñasSemanal",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here is the compiled feedback from customers:\n\n- {{ $json['feedbackData '].toJsonString() }}",
+        "options": {
+          "systemMessage": "=# ROL Y OBJETIVO\nEres un experto analista de experiencia de cliente para el \"[NOMBRE_DE_LA_CLINICA]\". Tu función es procesar el feedback semanal, clasificar los problemas y generar un reporte ejecutivo para la dirección.\n\n# METODOLOGÍA DE ANÁLISIS\nAnaliza el feedback recibido y clasifica cada punto en una de estas 6 categorías operativas. Prioriza SIEMPRE las áreas con feedback negativo o constructivo:\n\n1. Eficacia y Enfoque Terapéutico\n2. Gestión de Citas y Tiempos de Espera\n3. Empatía, Acogida y Vínculo Profesional\n4. Instalaciones y Ambiente (Sede 1, Sede 2, Sede 3)\n5. Relación Calidad/Precio\n6. Coordinación Multidisciplinar / Otros\n\n# FORMATO DE SALIDA (ESTRICTO)\nNo uses HTML. Genera el reporte usando exclusivamente Markdown compatible con Telegram. Sigue esta estructura exacta:\n\n### 1. ESTRUCTURA DEL REPORTE:\n\n📊 *1. RESUMEN EJECUTIVO*\n[Escribe aquí un párrafo breve de 3-4 líneas resumiendo el sentimiento general de la semana y los puntos más críticos a atender].\n\n🚨 *2. ANÁLISIS DE ÁREAS CRÍTICAS*\n[Selecciona las 2 o 3 categorías que han tenido incidencias o feedback negativo esta semana. Si no hay quejas, menciona las áreas de mejora sugeridas].\n\n* *[NOMBRE DE LA CATEGORÍA]* (Frecuencia: Alta/Media/Baja)\n   Explicación concisa del problema detectado.\n   _\"[Cita textual breve y anónima del cliente si es relevante]\"_\n\n🏆 *3. DESTACADOS POSITIVOS*\n[Breve lista de lo que se ha hecho excepcionalmente bien]."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [960, 144],
+      "id": "4d50104b-164e-44a7-92b0-355001ad3943",
+      "name": "Review_Agent"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID_LEAD",
+        "text": "=📊 *RESUMEN SEMANAL DE FEEDBACK*\n🗓️ *Periodo:* {{ $('Get_Week').item.json.nombreSemana }}\n\n──────────────\n\n{{ $json.report }}\n\n──────────────\n🤖 _Reporte generado automáticamente por IA_",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1872, 128],
+      "id": "8ec3b1ec-8f75-4b2b-89ea-7475dc34e21e",
+      "name": "Directivo_1",
+      "webhookId": "YOUR_WEBHOOK_ID"
+    }
+  ]
+}

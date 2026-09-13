@@ -1,0 +1,74 @@
+{
+  "name": "Semestral y Anual",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 1 1,7 *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-656, -192],
+      "id": "4a484324-d3d4-4abb-ac7a-f806c5933beb",
+      "name": "Cron (Ene y Jul)"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID_RAW_DATA",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 184055486,
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [-528, 432],
+      "id": "63fa24f7-9c81-47cd-9149-4e23d4a3a2e7",
+      "name": "Leer Datos Brutos",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CREDENTIAL_ID_1",
+          "name": "SheetsUser1"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Código de cálculo de conversión mantenido intacto\nconst rows = $input.all();\nconst stats = {};\nfor (const row of rows) {\n    let fechaRaw = row.json[\"FECHA\"] || row.json[\"Fecha\"];\n    let fechaObj = null;\n    if (typeof fechaRaw === 'number') {\n        fechaObj = new Date((fechaRaw - (25567 + 1)) * 86400 * 1000);\n    } else {\n        fechaRaw = (fechaRaw || \"\").toString().trim();\n        const matchAnio = fechaRaw.match(/(20\\d{2})/);\n        if (matchAnio) {\n            if (fechaRaw.includes(\"/\")) {\n                const partes = fechaRaw.split(\"/\");\n                if (partes.length === 3) {\n                    const p0 = parseInt(partes[0]);\n                    const p1 = parseInt(partes[1]);\n                    const p2 = parseInt(partes[2]);\n                    if (p2 > 2000) fechaObj = new Date(p2, p1 - 1, p0); \n                    else if (p0 > 2000) fechaObj = new Date(p0, p1 - 1, p2); \n                }\n            } else {\n                fechaObj = new Date(fechaRaw);\n            }\n        }\n    }\n    if (!fechaObj || isNaN(fechaObj.getTime())) continue;\n    const year = fechaObj.getFullYear();\n    const month = fechaObj.getMonth();\n    if (year < 2015) continue; \n    const aseguradoraRaw = (row.json[\"ASEGURADORA\"] || row.json[\"Aseguradora\"] || \"\").toLowerCase();\n    const pagoRaw = (row.json[\"30/45/60\"] || \"\").toString().toLowerCase(); \n    const lugarRaw = (row.json[\"LUGAR\"] || \"\").toLowerCase();\n    const textoTotal = aseguradoraRaw + \" \" + lugarRaw + \" \" + pagoRaw;\n    const semestre = month <= 5 ? \"S1\" : \"S2\";\n    if (!stats[year]) {\n        stats[year] = { S1: { mixtos: 0, aseguradora: 0 }, S2: { mixtos: 0, aseguradora: 0 }, Anual: { mixtos: 0, aseguradora: 0 } };\n    }\n    const esMixto = textoTotal.includes(\"mixto\") || pagoRaw.includes(\"$\") || pagoRaw.includes(\"+\"); \n    const esAseguradora = !esMixto && (textoTotal.includes(\"aseguradora\") || textoTotal.includes(\"privado\"));\n    if (esMixto) {\n        stats[year][semestre].mixtos++;\n        stats[year].Anual.mixtos++;\n    } else if (esAseguradora) {\n        stats[year][semestre].aseguradora++;\n        stats[year].Anual.aseguradora++;\n    }\n}\nconst itemsToAppend = [];\nfunction crearFila(nombrePeriodo, datos) {\n    const total = datos.mixtos + datos.aseguradora;\n    const ratio = total > 0 ? datos.mixtos / total : 0;\n    return { \"Periodo\": nombrePeriodo, \" Ratio de conversión\": ratio, \"Total_Pacientes\": total, \"Mixtos\": datos.mixtos, \"total\": total, \"ratio\": ratio, \"mixtos\": datos.mixtos };\n}\nconst aniosOrdenados = Object.keys(stats).sort();\nfor (const y of aniosOrdenados) {\n    if (stats[y].S1.mixtos + stats[y].S1.aseguradora > 0) itemsToAppend.push(crearFila(`ENE-JUN ${y}`, stats[y].S1));\n    if (stats[y].S2.mixtos + stats[y].S2.aseguradora > 0) itemsToAppend.push(crearFila(`JUL-DIC ${y}`, stats[y].S2));\n    if (stats[y].Anual.mixtos + stats[y].Anual.aseguradora > 0) itemsToAppend.push(crearFila(`AÑO ${y}`, stats[y].Anual));\n}\nreturn itemsToAppend;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-304, 432],
+      "id": "d4219760-654b-42c9-8a25-5bb901ea993d",
+      "name": "Calculadora Unificada",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID_1",
+        "text": "={{ $json.mensajeFinal }}",
+        "additionalFields": { "appendAttribution": false }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [576, 432],
+      "id": "3df91b5f-8750-4c6c-a710-58e46051d845",
+      "name": "Enviar Telegram",
+      "webhookId": "YOUR_WEBHOOK_ID",
+      "disabled": true
+    }
+  ]
+}
